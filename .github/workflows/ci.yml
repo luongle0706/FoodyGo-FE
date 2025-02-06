@@ -15,7 +15,7 @@ jobs:
           username: theanh
           password: theanh2004
           script: |
-            cd /home/theanh/GIT/SWD301-FoodyGo-FE/
+            cd /home/theanh/GIT/SWD391-FoodyGo-FE/
             git reset --hard HEAD
             git pull
             npm run build
