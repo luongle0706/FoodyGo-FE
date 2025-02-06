@@ -1,0 +1,21 @@
+# name: CI/CD Pipeline
+# on:
+#   push:
+#     branches:
+#       - main
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: SSH into VPS and deploy
+#         uses: appleboy/ssh-action@v0.1.5
+#         with:
+#           host: 171.250.186.250
+#           username: theanh
+#           password: theanh2004
+#           script: |
+#             cd /home/theanh/GIT/SWD301-FoodyGo-FE/
+#             git reset --hard HEAD
+#             git pull
+#             npm run build
