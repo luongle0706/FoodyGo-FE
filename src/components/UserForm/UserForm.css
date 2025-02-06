@@ -1,0 +1,108 @@
+/* src/components/UserForm/UserForm.css */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+  }
+  
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6c757d;
+  }
+  
+  .btn-close:hover {
+    color: #343a40;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  
+  .btn-submit,
+  .btn-cancel {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .btn-submit {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+  }
+  
+  .btn-submit:hover {
+    background-color: #0b5ed7;
+  }
+  
+  .btn-cancel {
+    background-color: white;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+  }
+  
+  .btn-cancel:hover {
+    background-color: #f8f9fa;
+  }

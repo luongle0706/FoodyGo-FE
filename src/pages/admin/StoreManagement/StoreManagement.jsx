@@ -1,6 +1,28 @@
 // src/pages/admin/StoreManagement/StoreManagement.jsx
 import React, { useState, useEffect } from 'react';
+import StoreForm from '../../../components/StoreForm/StoreForm';
 import './StoreManagement.css';
+
+const INITIAL_STORES = [
+  {
+    id: 1,
+    name: 'Store One',
+    owner: 'John Doe',
+    category: 'Food',
+    status: 'Active',
+    products: 150,
+    revenue: '45.2M'
+  },
+  {
+    id: 2,
+    name: 'Store Two',
+    owner: 'Jane Smith',
+    category: 'Food',
+    status: 'Inactive',
+    products: 89,
+    revenue: '12.8M'
+  }
+];
 
 const StoreManagement = () => {
   const [stores, setStores] = useState([]);
@@ -10,49 +32,24 @@ const StoreManagement = () => {
     status: '',
     category: ''
   });
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingStore, setEditingStore] = useState(null);
 
+  // Load stores from localStorage on initial mount
   useEffect(() => {
-
-    const mockStores = [
-      {
-        id: 1,
-        name: 'Store One',
-        owner: 'John Doe',
-        category: 'Food',
-        status: 'Active',
-        products: 150,
-        revenue: '45.2M'
-      },
-      {
-        id: 2,
-        name: 'Store Two',
-        owner: 'Jane Smith',
-        category: 'Food',
-        status: 'Inactive',
-        products: 89,
-        revenue: '12.8M'
-      },
-
-    ];
-    setStores(mockStores);
-    setFilteredStores(mockStores);
+    const savedStores = localStorage.getItem('stores');
+    if (savedStores) {
+      const parsedStores = JSON.parse(savedStores);
+      setStores(parsedStores);
+      setFilteredStores(parsedStores);
+    } else {
+      setStores(INITIAL_STORES);
+      setFilteredStores(INITIAL_STORES);
+      localStorage.setItem('stores', JSON.stringify(INITIAL_STORES));
+    }
   }, []);
 
-  const handleSearch = (event) => {
-    const searchTerm = event.target.value;
-    setFilters(prev => ({ ...prev, search: searchTerm }));
-  };
-
-  const handleStatusFilter = (event) => {
-    const status = event.target.value;
-    setFilters(prev => ({ ...prev, status }));
-  };
-
-  const handleCategoryFilter = (event) => {
-    const category = event.target.value;
-    setFilters(prev => ({ ...prev, category }));
-  };
-
+  // Apply filters when stores or filters change
   useEffect(() => {
     let result = [...stores];
 
@@ -78,11 +75,66 @@ const StoreManagement = () => {
     setFilteredStores(result);
   }, [filters, stores]);
 
+  const handleSearch = (event) => {
+    const searchTerm = event.target.value;
+    setFilters(prev => ({ ...prev, search: searchTerm }));
+  };
+
+  const handleStatusFilter = (event) => {
+    const status = event.target.value;
+    setFilters(prev => ({ ...prev, status }));
+  };
+
+  const handleCategoryFilter = (event) => {
+    const category = event.target.value;
+    setFilters(prev => ({ ...prev, category }));
+  };
+
+  const handleAddStore = () => {
+    setEditingStore(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (store) => {
+    setEditingStore(store);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (storeId) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa cửa hàng này?')) {
+      const updatedStores = stores.filter(store => store.id !== storeId);
+      setStores(updatedStores);
+      localStorage.setItem('stores', JSON.stringify(updatedStores));
+    }
+  };
+
+  const handleFormSubmit = (formData) => {
+    let updatedStores;
+    
+    if (editingStore) {
+      // Update existing store
+      updatedStores = stores.map(store =>
+        store.id === editingStore.id ? { ...formData, id: store.id } : store
+      );
+    } else {
+      // Add new store
+      const newStore = {
+        ...formData,
+        id: Math.max(...stores.map(s => s.id), 0) + 1
+      };
+      updatedStores = [...stores, newStore];
+    }
+
+    setStores(updatedStores);
+    localStorage.setItem('stores', JSON.stringify(updatedStores));
+    setIsFormOpen(false);
+  };
+
   return (
     <div className="store-management">
       <div className="header">
         <h2>Quản lý cửa hàng</h2>
-        <button className="btn-add">
+        <button className="btn-add" onClick={handleAddStore}>
           <span>➕</span>
           Thêm cửa hàng
         </button>
@@ -131,48 +183,67 @@ const StoreManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredStores.map(store => (
-                <tr key={store.id}>
-                  <td>#{store.id}</td>
-                  <td>{store.name}</td>
-                  <td>{store.owner}</td>
-                  <td>{store.category}</td>
-                  <td>{store.products}</td>
-                  <td>{store.revenue}</td>
-                  <td>
-                    <span className={`status-badge ${store.status.toLowerCase()}`}>
-                      {store.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="actions">
-                      <button className="action-btn edit">✏️</button>
-                      <button className="action-btn delete">🗑️</button>
-                      <button className="action-btn view">👁️</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Pagination */}
-        <div className="pagination">
-          <div className="pagination-info">
-            Hiển thị 1-{filteredStores.length} của {stores.length} kết quả
-          </div>
-          <div className="pagination-buttons">
-            <button className="btn-page">Trước</button>
-            <button className="btn-page active">1</button>
-            <button className="btn-page">2</button>
-            <button className="btn-page">3</button>
-            <button className="btn-page">Sau</button>
-          </div>
-        </div>
+{filteredStores.map(store => (
+  <tr key={store.id}>
+    <td>#{store.id}</td>
+    <td>{store.name}</td>
+    <td>{store.owner}</td>
+    <td>{store.category}</td>
+    <td>{store.products}</td>
+    <td>{store.revenue}</td>
+    <td>
+      <span className={`status-badge ${store.status.toLowerCase()}`}>
+        {store.status}
+      </span>
+    </td>
+    <td>
+      <div className="actions">
+        <button 
+          className="action-btn edit" 
+          onClick={() => handleEdit(store)}
+        >
+          ✏️
+        </button>
+        <button 
+          className="action-btn delete"
+          onClick={() => handleDelete(store.id)}
+        >
+          🗑️
+        </button>
+        <button className="action-btn view">👁️</button>
       </div>
-    </div>
-  );
+    </td>
+  </tr>
+))}
+</tbody>
+</table>
+</div>
+
+{/* Pagination */}
+<div className="pagination">
+  <div className="pagination-info">
+    Hiển thị 1-{filteredStores.length} của {stores.length} kết quả
+  </div>
+  <div className="pagination-buttons">
+    <button className="btn-page">Trước</button>
+    <button className="btn-page active">1</button>
+    <button className="btn-page">2</button>
+    <button className="btn-page">3</button>
+    <button className="btn-page">Sau</button>
+  </div>
+</div>
+
+{/* Store Form Modal */}
+<StoreForm
+  isOpen={isFormOpen}
+  onClose={() => setIsFormOpen(false)}
+  onSubmit={handleFormSubmit}
+  initialData={editingStore}
+/>
+</div>
+</div>
+);
 };
 
 export default StoreManagement;
