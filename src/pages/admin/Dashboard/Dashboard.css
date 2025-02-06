@@ -1,0 +1,24 @@
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+  }
+  
+  @media (max-width: 768px) {
+    .stats-grid,
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
