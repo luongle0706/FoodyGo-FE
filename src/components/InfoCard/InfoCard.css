@@ -1,0 +1,42 @@
+.info-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .info-card h3 {
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  
+  .info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .info-item:last-child {
+    border-bottom: none;
+  }
+  
+  .status-active {
+    color: #198754;
+  }
+  
+  .status-inactive {
+    color: #dc3545;
+  }
+  
+  .status-locked {
+    color: #ffc107;
+  }
