@@ -1,9 +1,14 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+// src/components/Header/Header.jsx
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { logout, getUserEmail } from '../Authentication/Auth';
 import './Header.css';
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const userEmail = getUserEmail();
   
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -20,6 +25,11 @@ const Header = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <header className="main-header">
       <h2 className="page-title">{getPageTitle()}</h2>
@@ -29,14 +39,22 @@ const Header = () => {
           🔔
           <span className="notification-badge"></span>
         </button>
-        <div className="user-info">
+        <div className="user-info" onClick={() => setShowDropdown(!showDropdown)}>
           <div className="user-avatar">
             👤
           </div>
           <div className="user-details">
             <p className="user-name">Admin User</p>
-            <p className="user-email">admin@example.com</p>
+            <p className="user-email">{userEmail}</p>
           </div>
+          {showDropdown && (
+            <div className="user-dropdown">
+              <button onClick={handleLogout} className="dropdown-item">
+                <span className="dropdown-icon">🚪</span>
+                Đăng xuất
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
