@@ -20,6 +20,6 @@ jobs:
             git pull
             npm install
             npm run build
-            sudo rm -rf /var/www/html/*
-            sudo cp -R /home/theanh/GIT/SWD391-FoodyGo-FE/dist/* /var/www/html/
+            sudo rm -rf /var/www/html/foodygo/*
+            sudo cp -R /home/theanh/GIT/SWD391-FoodyGo-FE/dist/* /var/www/html/foodygo
             sudo systemctl restart nginx
