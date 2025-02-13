@@ -1,4 +1,3 @@
-// src/pages/admin/Dashboard/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import StatCard from '../../../components/StatCard/StatCard';
 import InfoCard from '../../../components/InfoCard/InfoCard';

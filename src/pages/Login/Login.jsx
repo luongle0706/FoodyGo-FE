@@ -1,4 +1,3 @@
-// src/pages/Login/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isAuthenticated } from '../../components/Authentication/Auth';
@@ -12,7 +11,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
 
-  // Nếu đã đăng nhập thì chuyển đến trang tương ứng
+  
   React.useEffect(() => {
     if (isAuthenticated()) {
       const role = localStorage.getItem('userRole');
@@ -32,7 +31,7 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Mock users - trong thực tế sẽ gọi API
+
     const users = [
       { email: 'admin@example.com', password: 'admin123', role: 'admin' },
       { email: 'manager@example.com', password: 'manager123', role: 'manager' }

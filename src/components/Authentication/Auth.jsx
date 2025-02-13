@@ -1,4 +1,3 @@
-// src/components/auth.jsx
 export const isAuthenticated = () => {
     return !!localStorage.getItem('userRole');
   };
@@ -20,3 +19,4 @@ export const isAuthenticated = () => {
     const userRole = getUserRole();
     return userRole === requiredRole;
   };
+

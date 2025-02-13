@@ -1,7 +1,6 @@
-// src/components/Header/Header.jsx
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { logout, getUserEmail } from '../Authentication/Auth';
+import { logout, getUserEmail, getUserRole } from '../Authentication/Auth';
 import './Header.css';
 
 const Header = () => {
@@ -9,20 +8,20 @@ const Header = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const userEmail = getUserEmail();
-  
+  const userRole = getUserRole();
+
   const getPageTitle = () => {
-    switch (location.pathname) {
-      case '/admin':
-        return 'Thống kê';
-      case '/admin/users':
-        return 'Quản lý tài khoản';
-      case '/admin/stores':
-        return 'Quản lý cửa hàng';
-      case '/admin/settings':
-        return 'Cài đặt';
-      default:
-        return 'Dashboard';
-    }
+    const pathMap = {
+      '/admin': 'Thống kê',
+      '/admin/users': 'Quản lý tài khoản',
+      '/admin/stores': 'Quản lý cửa hàng',
+      '/admin/settings': 'Cài đặt',
+      '/manager': 'Thống kê',
+      '/manager/hubs': 'Quản lý Hub',
+      '/manager/stores': 'Quản lý cửa hàng',
+    };
+
+    return pathMap[location.pathname] || 'Dashboard';
   };
 
   const handleLogout = () => {
@@ -44,7 +43,9 @@ const Header = () => {
             👤
           </div>
           <div className="user-details">
-            <p className="user-name">Admin User</p>
+            <p className="user-name">
+              {userRole === 'admin' ? 'Admin User' : 'Manager User'}
+            </p>
             <p className="user-email">{userEmail}</p>
           </div>
           {showDropdown && (
