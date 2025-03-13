@@ -1,93 +1,124 @@
 // src/pages/admin/StoreManagement/StoreManagement.jsx
-import React, { useState, useEffect } from 'react';
-import StoreForm from '../../../components/StoreForm/StoreForm';
-import './StoreManagement.css';
-
-const INITIAL_STORES = [
-  {
-    id: 1,
-    name: 'Store One',
-    owner: 'John Doe',
-    category: 'Food',
-    status: 'Active',
-    products: 150,
-    revenue: '45.2M'
-  },
-  {
-    id: 2,
-    name: 'Store Two',
-    owner: 'Jane Smith',
-    category: 'Food',
-    status: 'Inactive',
-    products: 89,
-    revenue: '12.8M'
-  }
-];
+import React, { useState, useEffect } from "react";
+import {
+  GetStoresAPI,
+  DeleteStoreAPI,
+  ToggleStoreStatusAPI,
+  GetStoreByIdAPI,
+  UpdateStoreAPI,
+  CreateStoreAPI,
+} from "../../../serviceAPI/storeApi";
+import StoreForm from "../../../components/StoreForm/StoreForm";
+import "./StoreManagement.css";
 
 const StoreManagement = () => {
   const [stores, setStores] = useState([]);
   const [filteredStores, setFilteredStores] = useState([]);
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    category: ''
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
+  const [filters, setFilters] = useState({
+    search: "",
+    page: 1,
+    size: 30,
+  });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSizes: 30,
+    totalElements: 0,
+  });
 
-  // Load stores from localStorage on initial mount
-  useEffect(() => {
-    const savedStores = localStorage.getItem('stores');
-    if (savedStores) {
-      const parsedStores = JSON.parse(savedStores);
-      setStores(parsedStores);
-      setFilteredStores(parsedStores);
-    } else {
-      setStores(INITIAL_STORES);
-      setFilteredStores(INITIAL_STORES);
-      localStorage.setItem('stores', JSON.stringify(INITIAL_STORES));
+  // Load stores from API
+  const fetchStores = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setError("Vui lòng đăng nhập để xem danh sách cửa hàng");
+        setLoading(false);
+        return;
+      }
+
+      const response = await GetStoresAPI({
+        page: filters.page - 1,
+        size: filters.size,
+      });
+
+      console.log("API Response:", response); // Debug log
+
+      if (response && response.data) {
+        setStores(response.data);
+        setFilteredStores(response.data);
+        setPagination({
+          currentPage: filters.page,
+          totalPages: response.totalPages || 1,
+          pageSizes: response.pageSizes || 30,
+          totalElements: response.totalElements || response.data.length,
+        });
+      } else {
+        setError("Không thể tải dữ liệu cửa hàng");
+      }
+    } catch (error) {
+      console.error("Error fetching stores:", error);
+      if (error.response?.status === 401) {
+        setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+      } else {
+        setError(
+          "Có lỗi xảy ra khi tải dữ liệu: " +
+            (error.response?.data?.message || error.message)
+        );
+      }
     }
-  }, []);
-
-  // Apply filters when stores or filters change
-  useEffect(() => {
-    let result = [...stores];
-
-    if (filters.search) {
-      result = result.filter(store =>
-        store.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        store.owner.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-
-    if (filters.status) {
-      result = result.filter(store =>
-        store.status.toLowerCase() === filters.status.toLowerCase()
-      );
-    }
-
-    if (filters.category) {
-      result = result.filter(store =>
-        store.category.toLowerCase() === filters.category.toLowerCase()
-      );
-    }
-
-    setFilteredStores(result);
-  }, [filters, stores]);
-
-  const handleSearch = (event) => {
-    const searchTerm = event.target.value;
-    setFilters(prev => ({ ...prev, search: searchTerm }));
+    setLoading(false);
   };
 
-  const handleStatusFilter = (event) => {
-    const status = event.target.value;
-    setFilters(prev => ({ ...prev, status }));
+  useEffect(() => {
+    fetchStores();
+  }, [filters]);
+
+  // Xử lý auto-hide message
+  useEffect(() => {
+    if (error || successMessage) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, successMessage]);
+
+  const handleSearch = (searchTerm) => {
+    if (!searchTerm.trim()) {
+      setFilteredStores(stores);
+      return;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = stores.filter(
+      (store) =>
+        store.name.toLowerCase().includes(searchLower) ||
+        store.address.toLowerCase().includes(searchLower)
+    );
+    setFilteredStores(filtered);
   };
 
-  const handleCategoryFilter = (event) => {
-    const category = event.target.value;
-    setFilters(prev => ({ ...prev, category }));
+  const handleEdit = async (storeId) => {
+    try {
+      const response = await GetStoreByIdAPI(storeId);
+      if (response && response.data) {
+        setEditingStore(response.data);
+        setIsFormOpen(true);
+      } else {
+        setError("Không thể lấy thông tin cửa hàng");
+      }
+    } catch (error) {
+      console.error("Error getting store details:", error);
+      setError("Có lỗi xảy ra khi lấy thông tin cửa hàng");
+    }
   };
 
   const handleAddStore = () => {
@@ -95,155 +126,201 @@ const StoreManagement = () => {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (store) => {
-    setEditingStore(store);
-    setIsFormOpen(true);
-  };
+  const handleFormSubmit = async (formData) => {
+    try {
+      let response;
+      if (editingStore) {
+        // Cập nhật cửa hàng
+        response = await UpdateStoreAPI(formData.id, formData);
+      } else {
+        // Tạo cửa hàng mới
+        response = await CreateStoreAPI(formData);
+      }
 
-  const handleDelete = (storeId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa cửa hàng này?')) {
-      const updatedStores = stores.filter(store => store.id !== storeId);
-      setStores(updatedStores);
-      localStorage.setItem('stores', JSON.stringify(updatedStores));
-    }
-  };
-
-  const handleFormSubmit = (formData) => {
-    let updatedStores;
-    
-    if (editingStore) {
-      // Update existing store
-      updatedStores = stores.map(store =>
-        store.id === editingStore.id ? { ...formData, id: store.id } : store
+      if (response && response.code === "Success") {
+        setSuccessMessage(
+          editingStore
+            ? "Cập nhật cửa hàng thành công"
+            : "Thêm cửa hàng mới thành công"
+        );
+        setIsFormOpen(false);
+        setEditingStore(null);
+        await fetchStores();
+      } else {
+        setError(
+          response?.message ||
+            (editingStore
+              ? "Không thể cập nhật cửa hàng"
+              : "Không thể thêm cửa hàng mới")
+        );
+      }
+    } catch (error) {
+      console.error("Error submitting store form:", error);
+      setError(
+        "Có lỗi xảy ra khi " +
+          (editingStore ? "cập nhật cửa hàng" : "thêm cửa hàng mới")
       );
-    } else {
-      // Add new store
-      const newStore = {
-        ...formData,
-        id: Math.max(...stores.map(s => s.id), 0) + 1
-      };
-      updatedStores = [...stores, newStore];
     }
+  };
 
-    setStores(updatedStores);
-    localStorage.setItem('stores', JSON.stringify(updatedStores));
+  const handleCloseForm = () => {
     setIsFormOpen(false);
+    setEditingStore(null);
+  };
+
+  const handleDelete = async (storeId) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa cửa hàng này?")) {
+      try {
+        const response = await DeleteStoreAPI(storeId);
+        if (response && response.code === "Success") {
+          setSuccessMessage("Xóa cửa hàng thành công");
+          await fetchStores();
+        } else {
+          setError(response?.message || "Không thể xóa cửa hàng");
+        }
+      } catch (error) {
+        console.error("Error deleting store:", error);
+        setError("Có lỗi xảy ra khi xóa cửa hàng");
+      }
+    }
+  };
+
+  const handleToggleStatus = async (storeId) => {
+    try {
+      const response = await ToggleStoreStatusAPI(storeId);
+      if (response && response.code === "Success") {
+        setSuccessMessage("Cập nhật trạng thái thành công");
+        await fetchStores();
+      } else {
+        setError(response?.message || "Không thể cập nhật trạng thái");
+      }
+    } catch (error) {
+      console.error("Error toggling store status:", error);
+      setError("Có lỗi xảy ra khi cập nhật trạng thái");
+    }
   };
 
   return (
     <div className="store-management">
       <div className="header">
         <h2>Quản lý cửa hàng</h2>
-        <button className="btn-add" onClick={handleAddStore}>
-          <span>➕</span>
-          Thêm cửa hàng
+        <button className="add-store-btn" onClick={handleAddStore}>
+          + Thêm cửa hàng
         </button>
       </div>
 
       <div className="content">
-        {/* Filters */}
-        <div className="filters">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Tìm kiếm cửa hàng..."
-              onChange={handleSearch}
-              className="search-input"
-            />
-            <span className="search-icon">🔍</span>
-          </div>
-
-          <select className="filter-select" onChange={handleStatusFilter}>
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-
-          <select className="filter-select" onChange={handleCategoryFilter}>
-            <option value="">Tất cả danh mục</option>
-            <option value="electronics">Electronics</option>
-            <option value="fashion">Fashion</option>
-            <option value="food">Food</option>
-          </select>
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Tìm kiếm cửa hàng..."
+            onChange={(e) => handleSearch(e.target.value)}
+          />
         </div>
 
-        {/* Stores Table */}
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Tên cửa hàng</th>
-                <th>Chủ sở hữu</th>
-                <th>Danh mục</th>
-                <th>Sản phẩm</th>
-                <th>Doanh thu</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
+        {error && <div className="error-message">{error}</div>}
+        {successMessage && (
+          <div className="success-message">{successMessage}</div>
+        )}
 
-{filteredStores.map(store => (
-  <tr key={store.id}>
-    <td>#{store.id}</td>
-    <td>{store.name}</td>
-    <td>{store.owner}</td>
-    <td>{store.category}</td>
-    <td>{store.products}</td>
-    <td>{store.revenue}</td>
-    <td>
-      <span className={`status-badge ${store.status.toLowerCase()}`}>
-        {store.status}
-      </span>
-    </td>
-    <td>
-      <div className="actions">
-        <button 
-          className="action-btn edit" 
-          onClick={() => handleEdit(store)}
-        >
-          ✏️
-        </button>
-        <button 
-          className="action-btn delete"
-          onClick={() => handleDelete(store.id)}
-        >
-          🗑️
-        </button>
-        <button className="action-btn view">👁️</button>
+        {loading ? (
+          <div className="loading">Đang tải...</div>
+        ) : (
+          <>
+            <table className="store-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tên cửa hàng</th>
+                  <th>Địa chỉ</th>
+                  <th>Số điện thoại</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStores.map((store) => (
+                  <tr key={store.id}>
+                    <td>{store.id}</td>
+                    <td>{store.name}</td>
+                    <td>{store.address}</td>
+                    <td>{store.phone}</td>
+                    <td>
+                      <span
+                        className={`status ${
+                          store.available ? "active" : "inactive"
+                        }`}
+                        onClick={() => handleToggleStatus(store.id)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {store.available ? "Hoạt động" : "Ngừng hoạt động"}
+                      </span>
+                    </td>
+                    <td className="actions">
+                      <button
+                        className="action-btn edit"
+                        onClick={() => handleEdit(store.id)}
+                        title="Sửa"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="action-btn delete"
+                        onClick={() => handleDelete(store.id)}
+                        title="Xóa"
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="pagination">
+              <span>
+                Hiển thị{" "}
+                {(pagination.currentPage - 1) * pagination.pageSizes + 1}-
+                {Math.min(
+                  pagination.currentPage * pagination.pageSizes,
+                  pagination.totalElements
+                )}{" "}
+                của {pagination.totalElements} kết quả
+              </span>
+              <div className="pagination-buttons">
+                <button
+                  disabled={pagination.currentPage === 1}
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, page: prev.page - 1 }))
+                  }
+                >
+                  Trước
+                </button>
+                <span className="current-page">{pagination.currentPage}</span>
+                <button
+                  disabled={pagination.currentPage === pagination.totalPages}
+                  onClick={() =>
+                    setFilters((prev) => ({ ...prev, page: prev.page + 1 }))
+                  }
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {isFormOpen && (
+          <StoreForm
+            isOpen={isFormOpen}
+            initialData={editingStore}
+            onSubmit={handleFormSubmit}
+            onClose={handleCloseForm}
+          />
+        )}
       </div>
-    </td>
-  </tr>
-))}
-</tbody>
-</table>
-</div>
-
-{/* Pagination */}
-<div className="pagination">
-  <div className="pagination-info">
-    Hiển thị 1-{filteredStores.length} của {stores.length} kết quả
-  </div>
-  <div className="pagination-buttons">
-    <button className="btn-page">Trước</button>
-    <button className="btn-page active">1</button>
-    <button className="btn-page">2</button>
-    <button className="btn-page">3</button>
-    <button className="btn-page">Sau</button>
-  </div>
-</div>
-
-{/* Store Form Modal */}
-<StoreForm
-  isOpen={isFormOpen}
-  onClose={() => setIsFormOpen(false)}
-  onSubmit={handleFormSubmit}
-  initialData={editingStore}
-/>
-</div>
-</div>
-);
+    </div>
+  );
 };
 
 export default StoreManagement;

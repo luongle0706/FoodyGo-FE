@@ -1,0 +1,31 @@
+.product-availability-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-label {
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.status-label.available {
+  background-color: rgba(75, 181, 67, 0.15);
+  color: #4bb543;
+}
+
+.status-label.unavailable {
+  background-color: rgba(255, 76, 76, 0.15);
+  color: #ff4c4c;
+}
+
+/* Tùy chỉnh màu sắc cho switch */
+.switch-available .ant-switch-inner {
+  background-color: #4bb543 !important;
+}
+
+.switch-unavailable .ant-switch-inner {
+  background-color: #ff4c4c !important;
+}

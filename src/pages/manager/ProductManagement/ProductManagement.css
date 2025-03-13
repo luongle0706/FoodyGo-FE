@@ -1,4 +1,4 @@
-.store-management {
+.product-management {
   padding: 20px;
 }
 
@@ -16,7 +16,7 @@
   color: #333;
 }
 
-.add-store-btn {
+.add-product-btn {
   background-color: #1890ff;
   color: white;
   border: none;
@@ -27,11 +27,11 @@
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   transition: all 0.3s ease;
 }
 
-.add-store-btn:hover {
+.add-product-btn:hover {
   background-color: #40a9ff;
   box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
 }
@@ -40,15 +40,55 @@
   margin-bottom: 24px;
 }
 
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
+}
+
+.stat-card h3 {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0 0 12px 0;
+  color: #1a1a1a;
+}
+
+.stat-details {
+  display: flex;
+  gap: 16px;
+}
+
+.stat-details span {
+  font-size: 14px;
+}
+
+.stat-details .active {
+  color: #52c41a;
+}
+
+.stat-details .inactive {
+  color: #ff4d4f;
+}
+
 .filters {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
+  align-items: center;
 }
 
 .search-box {
   flex: 1;
   position: relative;
+  max-width: 400px;
 }
 
 .search-input {
@@ -76,45 +116,45 @@
   min-width: 150px;
 }
 
-.table-container {
-  background-color: #fff;
+.content {
+  background: white;
   border-radius: 8px;
+  padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
   margin-bottom: 20px;
 }
 
-table {
+.product-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th,
-td {
+.product-table th,
+.product-table td {
   padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid #dee2e6;
 }
 
-th {
+.product-table th {
   background-color: #f8f9fa;
   font-weight: 500;
   color: #495057;
 }
 
-.text-center {
-  text-align: center;
-}
-
-.text-right {
-  text-align: right;
-}
-
+/* Status Badge Styles */
 .status-badge {
+  display: inline-block;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  text-align: center;
+  min-width: 80px;
 }
 
 .status-badge.active {
@@ -127,11 +167,12 @@ th {
   color: #842029;
 }
 
+/* Action Buttons */
 .actions {
   display: flex;
   gap: 8px;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .action-btn {
@@ -178,11 +219,41 @@ th {
   background-color: #fff5f5;
 }
 
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 16px;
+  color: #6c757d;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+  border: 1px solid #ef9a9a;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+  border: 1px solid #a5d6a7;
+}
+
 .pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px;
+  margin-top: 16px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
 }
 
 .pagination-info {
@@ -192,39 +263,58 @@ th {
 
 .pagination-buttons {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  align-items: center;
 }
 
-.btn-page {
+.btn-page,
+.pagination-buttons button {
   padding: 6px 12px;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
   background-color: #fff;
-  color: #495057;
+  color: #0d6efd;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.btn-page:hover:not(:disabled) {
-  background-color: #f8f9fa;
+.btn-page:disabled,
+.pagination-buttons button:disabled {
+  color: #6c757d;
+  background-color: #e9ecef;
+  cursor: not-allowed;
 }
 
-.btn-page.active {
+.btn-page:not(:disabled):hover,
+.pagination-buttons button:not(:disabled):hover {
+  background-color: #e9ecef;
+}
+
+.current-page {
+  padding: 6px 12px;
   background-color: #0d6efd;
-  border-color: #0d6efd;
   color: #fff;
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .add-product-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .filters {
     flex-direction: column;
+    align-items: stretch;
   }
 
-  .filter-select {
-    width: 100%;
-  }
-
-  .table-container {
-    overflow-x: auto;
+  .search-box {
+    max-width: 100%;
   }
 
   .pagination {
