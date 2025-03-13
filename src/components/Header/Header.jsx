@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { logout, getUserEmail, getUserRole } from '../Authentication/Auth';
-import './Header.css';
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { logout, getUserEmail, getUserRole } from "../Authentication/Auth";
+import "./Header.css";
 
 const Header = () => {
   const location = useLocation();
@@ -12,39 +12,37 @@ const Header = () => {
 
   const getPageTitle = () => {
     const pathMap = {
-      '/admin': 'Thống kê',
-      '/admin/users': 'Quản lý tài khoản',
-      '/admin/stores': 'Quản lý cửa hàng',
-      '/admin/settings': 'Cài đặt',
-      '/manager': 'Thống kê',
-      '/manager/hubs': 'Quản lý Hub',
-      '/manager/stores': 'Quản lý cửa hàng',
+      "/admin": "Thống kê",
+      "/admin/users": "Quản lý tài khoản",
+      "/admin/stores": "Quản lý cửa hàng",
+      "/admin/settings": "Cài đặt",
+      "/manager": "Thống kê",
+      "/manager/hubs": "Quản lý Hub",
+      "/manager/stores": "Quản lý cửa hàng",
+      "/manager/products": "Quản lý Đơn hàng",
     };
 
-    return pathMap[location.pathname] || 'Dashboard';
+    return pathMap[location.pathname] || "Dashboard";
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     <header className="main-header">
       <h2 className="page-title">{getPageTitle()}</h2>
-      
+
       <div className="header-actions">
-        <button className="notification-btn">
-          🔔
-          <span className="notification-badge"></span>
-        </button>
-        <div className="user-info" onClick={() => setShowDropdown(!showDropdown)}>
-          <div className="user-avatar">
-            👤
-          </div>
+        <div
+          className="user-info"
+          onClick={() => setShowDropdown(!showDropdown)}
+        >
+          <div className="user-avatar">👤</div>
           <div className="user-details">
             <p className="user-name">
-              {userRole === 'admin' ? 'Admin User' : 'Manager User'}
+              {userRole === "admin" ? "Admin User" : "Manager User"}
             </p>
             <p className="user-email">{userEmail}</p>
           </div>

@@ -1,29 +1,81 @@
 // src/components/StoreForm/StoreForm.jsx
-import React, { useState } from 'react';
-import './StoreForm.css';
+import React, { useState, useEffect } from "react";
+import "./StoreForm.css";
 
-const StoreForm = ({ isOpen, onClose, onSubmit, initialData }) => {
-  const [formData, setFormData] = useState(initialData || {
-    name: '',
-    owner: '',
-    category: 'Food',
-    status: 'Active',
-    products: 0,
-    revenue: '0'
+const StoreForm = ({ isOpen, initialData, onSubmit, onClose }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    image: "",
+    available: true,
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Tên cửa hàng là bắt buộc";
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Số điện thoại là bắt buộc";
+    } else if (!/^[0-9]{10,11}$/.test(formData.phone)) {
+      newErrors.phone = "Số điện thoại không hợp lệ";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email là bắt buộc";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = "Địa chỉ là bắt buộc";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    // Xóa lỗi khi người dùng bắt đầu nhập
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    onClose();
+    if (validateForm()) {
+      setIsSubmitting(true);
+      try {
+        await onSubmit(formData);
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        setErrors((prev) => ({
+          ...prev,
+          submit: error.message || "Có lỗi xảy ra khi lưu thông tin",
+        }));
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -32,95 +84,112 @@ const StoreForm = ({ isOpen, onClose, onSubmit, initialData }) => {
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>{initialData ? 'Sửa cửa hàng' : 'Thêm cửa hàng'}</h3>
-          <button className="btn-close" onClick={onClose}>×</button>
+          <h2>{initialData ? "Cập nhật cửa hàng" : "Thêm cửa hàng mới"}</h2>
+          <button className="close-button" onClick={onClose}>
+            ×
+          </button>
         </div>
+
+        {errors.submit && <div className="error-message">{errors.submit}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Tên cửa hàng</label>
+            <label htmlFor="name">Tên cửa hàng *</label>
             <input
               type="text"
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              required
+              className={errors.name ? "error" : ""}
             />
+            {errors.name && <span className="error-text">{errors.name}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="owner">Chủ sở hữu</label>
+            <label htmlFor="phone">Số điện thoại *</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className={errors.phone ? "error" : ""}
+            />
+            {errors.phone && <span className="error-text">{errors.phone}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email *</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={errors.email ? "error" : ""}
+            />
+            {errors.email && <span className="error-text">{errors.email}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="address">Địa chỉ *</label>
             <input
               type="text"
-              id="owner"
-              name="owner"
-              value={formData.owner}
+              id="address"
+              name="address"
+              value={formData.address}
               onChange={handleChange}
-              required
+              className={errors.address ? "error" : ""}
             />
+            {errors.address && (
+              <span className="error-text">{errors.address}</span>
+            )}
           </div>
 
           <div className="form-group">
-            <label htmlFor="category">Danh mục</label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-            >
-              <option value="Food">Food</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Fashion">Fashion</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="products">Số lượng sản phẩm</label>
-            <input
-              type="number"
-              id="products"
-              name="products"
-              value={formData.products}
-              onChange={handleChange}
-              required
-              min="0"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="revenue">Doanh thu</label>
+            <label htmlFor="image">Link hình ảnh</label>
             <input
               type="text"
-              id="revenue"
-              name="revenue"
-              value={formData.revenue}
+              id="image"
+              name="image"
+              value={formData.image}
               onChange={handleChange}
-              required
+              placeholder="https://example.com/image.jpg"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="status">Trạng thái</label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              required
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+          <div className="form-group checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                name="available"
+                checked={formData.available}
+                onChange={handleChange}
+              />
+              <span>Hoạt động</span>
+            </label>
           </div>
 
-          <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>
-              Hủy
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="btn-submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Đang xử lý..."
+                : initialData
+                ? "Cập nhật"
+                : "Thêm mới"}
             </button>
-            <button type="submit" className="btn-submit">
-              {initialData ? 'Cập nhật' : 'Thêm'}
+            <button
+              type="button"
+              className="btn-cancel"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Hủy
             </button>
           </div>
         </form>
