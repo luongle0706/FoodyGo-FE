@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://foodygo.theanh0804.id.vn/api/v1";
+const API_URL = "https://foodygo.theanh0804.duckdns.org/api/v1";
 
 const getAuthToken = () => {
   return localStorage.getItem("accessToken");

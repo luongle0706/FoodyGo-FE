@@ -11,13 +11,15 @@ jobs:
       - name: SSH into VPS and deploy
         uses: appleboy/ssh-action@v0.1.5
         with:
-          host: 171.250.186.250
+          host: theanh0804.duckdns.org
           username: theanh
           password: theanh2004
           script: |
             cd /home/theanh/GIT/SWD391-FoodyGo-FE/
-            git reset --hard HEAD
-            git pull
+            sudo chmod -R 777 .
+            git fetch --all
+            git clean -df
+            git reset --hard origin/main
             npm install
             npm run build
             sudo rm -rf /var/www/html/foodygo/*

@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { jwtDecode } from "jwt-decode";
 
 const request = axios.create({
-  baseURL: "https://foodygo.theanh0804.id.vn",
+  baseURL: "https://foodygo.theanh0804.duckdns.org",
   headers: { "Content-Type": "application/json" },
   // withCredentials: true,
 });
@@ -39,7 +39,7 @@ const refreshAccessToken = async () => {
     }
 
     const response = await axios.post(
-      "https://foodygo.theanh0804.id.vn/api/v1/authentications/refresh-token",
+      "https://foodygo.theanh0804.duckdns.org/api/v1/authentications/refresh-token",
       {},
       {
         headers: { RefreshToken: refreshToken },
