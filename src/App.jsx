@@ -11,7 +11,6 @@ import ManagerLayout from "./pages/manager/Layout/ManagerLayout";
 import Dashboard from "./pages/admin/Dashboard/Dashboard";
 import UserManagement from "./pages/admin/UserManagement/UserManagement";
 import StoreManagement from "./pages/admin/StoreManagement/StoreManagement";
-import Settings from "./pages/admin/Settings/Settings";
 import ManagerDashboard from "./pages/manager/ManagerDashboard/Dashboard";
 import HubManagement from "./pages/manager/HubManagement/HubManagement";
 import ManagerStoreManagement from "./pages/manager/ManagerStoreManagement/StoreManagement";
@@ -61,7 +60,6 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="stores" element={<StoreManagement />} />
-          <Route path="settings" element={<Settings />} />
         </Route>
 
         {/* Manager Routes */}

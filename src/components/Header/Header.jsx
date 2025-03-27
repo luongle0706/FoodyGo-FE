@@ -15,7 +15,6 @@ const Header = () => {
       "/admin": "Thống kê",
       "/admin/users": "Quản lý tài khoản",
       "/admin/stores": "Quản lý cửa hàng",
-      "/admin/settings": "Cài đặt",
       "/manager": "Thống kê",
       "/manager/hubs": "Quản lý Hub",
       "/manager/stores": "Quản lý cửa hàng",

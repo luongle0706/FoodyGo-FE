@@ -10,7 +10,6 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
     { icon: '📊', label: 'Thống kê', path: '/admin' },
     { icon: '👥', label: 'Quản lý tài khoản', path: '/admin/users' },
     { icon: '🏪', label: 'Quản lý cửa hàng', path: '/admin/stores' },
-    { icon: '⚙️', label: 'Cài đặt', path: '/admin/settings' },
   ];
 
   const isActivePath = (path) => {

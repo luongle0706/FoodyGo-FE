@@ -1,13 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import StatCard from "../../../components/StatCard/StatCard";
 import InfoCard from "../../../components/InfoCard/InfoCard";
 import { GetHubsAPI, GetHubByIdAPI } from "../../../serviceAPI/hubApi";
 import { GetStoresAPI } from "../../../serviceAPI/storeApi";
 import { GetProductsAPI } from "../../../serviceAPI/productApi";
+import { GetDashboardDataAPI } from "../../../serviceAPI/storeApi";
 import { message, Spin } from "antd";
+import {
+  Chart,
+  LineElement,
+  LineController,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import "./Dashboard.css";
 
+// Đăng ký các thành phần Chart.js cần thiết
+Chart.register(
+  LineElement,
+  LineController,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 const Dashboard = () => {
+  // Thêm ref cho biểu đồ doanh thu
+  const revenueChartRef = useRef(null);
+  const revenueChartInstance = useRef(null);
+
   const [loading, setLoading] = useState(true);
   const [hubData, setHubData] = useState({
     hubs: [],
@@ -71,6 +99,26 @@ const Dashboard = () => {
   });
   const [revenueData, setRevenueData] = useState([]);
   const [selectedTimeRange, setSelectedTimeRange] = useState("week");
+  const [adminDashboardData, setAdminDashboardData] = useState({
+    revenueStatistics: {
+      todayOrders: 0,
+      thisWeekOrders: 0,
+      thisMonthOrders: 0,
+      thisYearOrders: 0,
+      todayRevenue: 0,
+      thisWeekRevenue: 0,
+      thisMonthRevenue: 0,
+      thisYearRevenue: 0,
+      last12MonthsRevenue: []
+    },
+    orderStatusStatistics: {
+      totalOrders: 0,
+      statusDistribution: []
+    },
+    topRestaurants: {
+      restaurants: []
+    }
+  });
 
   // Format số tiền thành định dạng tiền tệ
   const formatCurrency = (value) => {
@@ -175,146 +223,180 @@ const Dashboard = () => {
     }
   };
 
-  // Lấy dữ liệu mẫu cho doanh thu
-  const generateRevenueData = (products, stores) => {
-    const weeklyData = [];
-    const today = new Date();
-
-    // Tổng giá trị sản phẩm (dùng để mô phỏng doanh thu)
-    let totalProductValue = 0;
-    if (products && products.length > 0) {
-      totalProductValue = products.reduce(
-        (sum, product) => sum + (product.price || 0),
-        0
-      );
-    }
-
-    // Số lượng cửa hàng đang hoạt động
-    const activeStoreCount = stores
-      ? stores.filter((store) => store.available).length
-      : 1;
-
-    // Tạo dữ liệu doanh thu cho 7 ngày gần nhất
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-
-      // Dùng thuật toán đơn giản để tạo số liệu trông thực tế
-      const day = date.getDate();
-      const variance = (day % 5) / 10 + 0.8; // Biến động từ 0.8 đến 1.3
-
-      const baseRevenue = totalProductValue * variance * activeStoreCount;
-      const baseOrders = Math.round(
-        (activeStoreCount * variance * (products ? products.length : 10)) / 5
-      );
-
-      // Thêm yếu tố ngẫu nhiên để dữ liệu thực tế hơn
-      const randomFactor = 0.85 + Math.random() * 0.3; // 0.85 đến 1.15
-
-      const revenue = Math.round(baseRevenue * randomFactor);
-      const orders = Math.max(1, Math.round(baseOrders * randomFactor));
-
-      weeklyData.push({
-        date: `${date.getDate()}/${date.getMonth() + 1}`,
-        revenue: revenue,
-        orders: orders,
-      });
-    }
-
-    return weeklyData;
-  };
-
-  // Tạo dữ liệu doanh thu cho chế độ xem tháng
-  const generateMonthlyData = (weeklyData) => {
-    const monthlyData = [];
-    const totalWeeks = 4;
-
-    for (let i = 0; i < totalWeeks; i++) {
-      const weekRevenue = weeklyData.reduce((sum, day, index) => {
-        // Chỉ lấy dữ liệu của tuần hiện tại
-        if (Math.floor(index / 7) === i % 4) {
-          return sum + day.revenue;
-        }
-        return sum;
-      }, 0);
-
-      const weekOrders = weeklyData.reduce((sum, day, index) => {
-        if (Math.floor(index / 7) === i % 4) {
-          return sum + day.orders;
-        }
-        return sum;
-      }, 0);
-
-      monthlyData.push({
-        date: `Tuần ${i + 1}`,
-        revenue: weekRevenue,
-        orders: weekOrders,
-      });
-    }
-
-    return monthlyData;
-  };
-
-  // Tạo dữ liệu doanh thu cho chế độ xem năm
-  const generateYearlyData = (monthlyData) => {
-    const yearlyData = [];
-    const months = 12;
-
-    for (let i = 0; i < months; i++) {
-      // Tạo biến động theo mùa
-      let seasonalFactor = 1;
-      if (i >= 9 && i <= 11) {
-        // Quý 4: mùa cao điểm
-        seasonalFactor = 1.5;
-      } else if (i >= 0 && i <= 2) {
-        // Quý 1: sau Tết
-        seasonalFactor = 0.8;
-      } else if (i >= 3 && i <= 5) {
-        // Quý 2: phục hồi
-        seasonalFactor = 1.1;
-      } else if (i >= 6 && i <= 8) {
-        // Quý 3: bình thường
-        seasonalFactor = 1.2;
+  // Lấy dữ liệu từ Admin Dashboard API
+  const fetchAdminDashboardData = async () => {
+    try {
+      const response = await GetDashboardDataAPI();
+      if (response && response.data) {
+        setAdminDashboardData(response.data);
+        return response.data;
       }
-
-      const baseValue = monthlyData[i % monthlyData.length].revenue;
-      const randomFactor = 0.9 + Math.random() * 0.2;
-
-      yearlyData.push({
-        date: `T${i + 1}`,
-        revenue: Math.round(baseValue * 4 * seasonalFactor * randomFactor),
-        orders: Math.round(
-          monthlyData[i % monthlyData.length].orders *
-            4 *
-            seasonalFactor *
-            randomFactor
-        ),
-      });
+      return null;
+    } catch (error) {
+      console.error("Error fetching admin dashboard data:", error);
+      return null;
     }
-
-    return yearlyData;
   };
 
-  // Tính toán doanh thu từ dữ liệu
-  const calculateRevenue = (weeklyData) => {
-    if (!weeklyData || weeklyData.length === 0) {
-      return {
-        total: 0,
-        paid: 0,
-        unpaid: 0,
-      };
+  // Xử lý khi thay đổi khoảng thời gian của biểu đồ doanh thu
+  const handleTimeRangeChange = (timeRange) => {
+    setSelectedTimeRange(timeRange);
+    initializeRevenueChart();
+  };
+
+  // Khởi tạo biểu đồ doanh thu sử dụng dữ liệu từ Admin API
+  const initializeRevenueChart = () => {
+    if (!revenueChartRef.current) return;
+
+    if (revenueChartInstance.current) {
+      revenueChartInstance.current.destroy();
+      revenueChartInstance.current = null;
     }
 
-    const total = weeklyData.reduce((sum, day) => sum + day.revenue, 0);
-    // Giả định 80% doanh thu đã thanh toán, 20% chưa thanh toán
-    const paid = Math.round(total * 0.8);
-    const unpaid = total - paid;
+    let chartLabels = [];
+    let revenueValues = [];
+    let orderValues = [];
 
-    return {
-      total,
-      paid,
-      unpaid,
+    // Sử dụng dữ liệu từ API của Admin
+    if (selectedTimeRange === "week") {
+      // Lấy dữ liệu 7 ngày gần nhất
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        last7Days.push(date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }));
+      }
+      chartLabels = last7Days;
+      // Lấy dữ liệu doanh thu từ 12 tháng, chia đều cho 7 ngày gần nhất
+      const totalRevenue = adminDashboardData.revenueStatistics.thisWeekRevenue;
+      const totalOrders = adminDashboardData.revenueStatistics.thisWeekOrders;
+      
+      // Phân bổ doanh thu cho 7 ngày
+      const averageRevenue = totalRevenue / 7;
+      const averageOrders = totalOrders / 7;
+      
+      for (let i = 0; i < 7; i++) {
+        // Thêm biến động ngẫu nhiên ±20%
+        const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+        revenueValues.push(averageRevenue * randomFactor);
+        orderValues.push(Math.round(averageOrders * randomFactor));
+      }
+    } else if (selectedTimeRange === "month") {
+      // Lấy dữ liệu 30 ngày gần nhất, hiển thị theo tuần
+      chartLabels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
+      
+      const totalRevenue = adminDashboardData.revenueStatistics.thisMonthRevenue;
+      const totalOrders = adminDashboardData.revenueStatistics.thisMonthOrders;
+      
+      // Phân bổ doanh thu cho 4 tuần
+      const averageRevenue = totalRevenue / 4;
+      const averageOrders = totalOrders / 4;
+      
+      for (let i = 0; i < 4; i++) {
+        // Thêm biến động ngẫu nhiên ±20%
+        const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+        revenueValues.push(averageRevenue * randomFactor);
+        orderValues.push(Math.round(averageOrders * randomFactor));
+      }
+    } else if (selectedTimeRange === "year") {
+      // Sử dụng dữ liệu 12 tháng từ API Admin
+      chartLabels = adminDashboardData.revenueStatistics.last12MonthsRevenue.map(item => item.month);
+      revenueValues = adminDashboardData.revenueStatistics.last12MonthsRevenue.map(item => item.revenue);
+      
+      // Tạo dữ liệu đơn hàng dựa trên doanh thu (giả định trung bình 100.000 VND/đơn)
+      orderValues = revenueValues.map(revenue => Math.round(revenue / 100000));
+    }
+
+    const chartData = {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Doanh thu',
+          data: revenueValues,
+          borderColor: '#4e73df',
+          backgroundColor: 'rgba(78, 115, 223, 0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#4e73df',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#4e73df',
+          pointHoverBorderColor: '#fff',
+          pointHitRadius: 10,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Số đơn hàng',
+          data: orderValues,
+          borderColor: '#1cc88a',
+          backgroundColor: 'rgba(28, 200, 138, 0.1)',
+          borderWidth: 2,
+          pointBackgroundColor: '#1cc88a',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#1cc88a',
+          pointHoverBorderColor: '#fff',
+          pointHitRadius: 10,
+          fill: false,
+          tension: 0.4
+        }
+      ]
     };
+
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        title: {
+          display: true,
+          text: selectedTimeRange === "week" 
+            ? 'Biểu đồ doanh thu tuần' 
+            : selectedTimeRange === "month" 
+              ? 'Biểu đồ doanh thu tháng' 
+              : 'Biểu đồ doanh thu năm',
+          font: {
+            size: 16
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const label = context.dataset.label || '';
+              if (label === 'Doanh thu') {
+                return label + ': ' + formatCurrency(context.raw);
+              } else {
+                return label + ': ' + context.raw + ' đơn';
+              }
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function (value) {
+              if (value >= 1000000) {
+                return (value / 1000000) + 'M';
+              } else if (value >= 1000) {
+                return (value / 1000) + 'K';
+              }
+              return value;
+            }
+          }
+        }
+      }
+    };
+
+    revenueChartInstance.current = new Chart(revenueChartRef.current, {
+      type: 'line',
+      data: chartData,
+      options: chartOptions
+    });
   };
 
   // Cập nhật dashboard data từ dữ liệu fetched
@@ -326,16 +408,14 @@ const Dashboard = () => {
       const hubsData = await fetchHubData();
       const storesData = await fetchStoreData();
       const productsData = await fetchProductData();
+      const adminData = await fetchAdminDashboardData();
 
-      // Tạo dữ liệu doanh thu từ dữ liệu sản phẩm và cửa hàng
-      const weeklyRevenueData = generateRevenueData(
-        productData.products,
-        storeData.stores
-      );
-      setRevenueData(weeklyRevenueData);
-
-      // Tính toán doanh thu
-      const revenueStats = calculateRevenue(weeklyRevenueData);
+      // Tính toán doanh thu từ dữ liệu Admin
+      const revenueStats = {
+        total: adminData ? adminData.revenueStatistics.thisYearRevenue : 0,
+        paid: adminData ? Math.round(adminData.revenueStatistics.thisYearRevenue * 0.8) : 0,
+        unpaid: adminData ? Math.round(adminData.revenueStatistics.thisYearRevenue * 0.2) : 0
+      };
 
       // Cập nhật dashboard data
       setDashboardData({
@@ -420,27 +500,24 @@ const Dashboard = () => {
         paymentStatus: [
           {
             label: "Đã thanh toán",
-            value: Math.round(
-              weeklyRevenueData.reduce((sum, day) => sum + day.orders, 0) * 0.75
-            ).toString(),
+            value: adminData ? Math.round(adminData.revenueStatistics.thisYearOrders * 0.75).toString() : "0",
             type: "active",
           },
           {
             label: "Chưa thanh toán",
-            value: Math.round(
-              weeklyRevenueData.reduce((sum, day) => sum + day.orders, 0) * 0.2
-            ).toString(),
+            value: adminData ? Math.round(adminData.revenueStatistics.thisYearOrders * 0.2).toString() : "0",
             type: "pending",
           },
           {
             label: "Hủy thanh toán",
-            value: Math.round(
-              weeklyRevenueData.reduce((sum, day) => sum + day.orders, 0) * 0.05
-            ).toString(),
+            value: adminData ? Math.round(adminData.revenueStatistics.thisYearOrders * 0.05).toString() : "0",
             type: "cancelled",
           },
         ],
       });
+
+      // Khởi tạo biểu đồ doanh thu
+      initializeRevenueChart();
     } catch (error) {
       console.error("Error updating dashboard data:", error);
       message.error("Không thể cập nhật dữ liệu dashboard");
@@ -449,41 +526,17 @@ const Dashboard = () => {
     }
   };
 
-  // Xử lý khi thay đổi khoảng thời gian của biểu đồ doanh thu
-  const handleTimeRangeChange = (timeRange) => {
-    setSelectedTimeRange(timeRange);
-
-    try {
-      let data = [];
-
-      if (timeRange === "week") {
-        data = generateRevenueData(productData.products, storeData.stores);
-      } else if (timeRange === "month") {
-        const weeklyData = generateRevenueData(
-          productData.products,
-          storeData.stores
-        );
-        data = generateMonthlyData(weeklyData);
-      } else if (timeRange === "year") {
-        const weeklyData = generateRevenueData(
-          productData.products,
-          storeData.stores
-        );
-        const monthlyData = generateMonthlyData(weeklyData);
-        data = generateYearlyData(monthlyData);
-      }
-
-      setRevenueData(data);
-    } catch (error) {
-      console.error("Error changing time range:", error);
-      message.error("Không thể thay đổi khoảng thời gian");
-    }
-  };
-
   // Gọi API khi component mount
   useEffect(() => {
     updateDashboardData();
   }, []);
+
+  // Khi thay đổi khoảng thời gian, cập nhật lại biểu đồ
+  useEffect(() => {
+    if (!loading && adminDashboardData) {
+      initializeRevenueChart();
+    }
+  }, [selectedTimeRange, loading, adminDashboardData]);
 
   return (
     <div className="dashboard-container">
@@ -534,22 +587,8 @@ const Dashboard = () => {
               </div>
 
               <div className="chart-container">
-                {revenueData && revenueData.length > 0 ? (
-                  <div className="chart-placeholder">
-                    {/* Phần này sẽ hiển thị biểu đồ doanh thu */}
-                    <div className="chart-image">
-                      <div className="no-data">
-                        <p>
-                          Biểu đồ doanh thu{" "}
-                          {selectedTimeRange === "week"
-                            ? "tuần"
-                            : selectedTimeRange === "month"
-                            ? "tháng"
-                            : "năm"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                {adminDashboardData && adminDashboardData.revenueStatistics ? (
+                  <canvas ref={revenueChartRef} height="400"></canvas>
                 ) : (
                   <div className="no-data">
                     <p>Không có dữ liệu doanh thu</p>

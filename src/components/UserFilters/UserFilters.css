@@ -9,6 +9,7 @@
 .search-box {
   flex: 1;
   min-width: 300px;
+  margin-top: 18px;
 }
 
 .search-box input {

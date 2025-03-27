@@ -38,11 +38,19 @@ const UserManagement = () => {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
   // Load users from API
-  const fetchUsers = async () => {
+  const fetchUsers = async (shouldResetFilters = false) => {
     setLoading(true);
     setError(null);
+    
+    // Tạo một bản sao của filters hiện tại để tránh vòng lặp vô hạn
+    const currentFilters = shouldResetFilters ? {
+      search: "",
+      role: "",
+      status: ""
+    } : {...filters};
+    
     try {
-      const response = await GetUsersAPI(filters);
+      const response = await GetUsersAPI(currentFilters);
       if (response && response.code === "Success") {
         setUsers(response.data);
         setFilteredUsers(response.data);
@@ -62,9 +70,14 @@ const UserManagement = () => {
     setLoading(false);
   };
 
+  // Biến để kiểm soát việc gọi lại API
+  const [skipFetchOnFilterChange, setSkipFetchOnFilterChange] = useState(false);
+
   useEffect(() => {
-    fetchUsers();
-  }, [filters]);
+    if (!skipFetchOnFilterChange) {
+      fetchUsers();
+    }
+  }, [filters, skipFetchOnFilterChange]);
 
   // Thêm useEffect để xử lý auto-hide message
   useEffect(() => {
@@ -303,9 +316,12 @@ const UserManagement = () => {
       const currentUserRole = localStorage.getItem("userRole");
 
       if (editingUser) {
+        // Lưu một bản sao của editingUser để sử dụng sau này
+        const userBeingEdited = {...editingUser};
+        
         // Nếu là ADMIN, cho phép cập nhật mọi thông tin
         if (currentUserRole === "admin") {
-          console.log("Current user:", editingUser);
+          console.log("Current user:", userBeingEdited);
           console.log("Form data:", formData);
 
           // Tạo đúng format dữ liệu cho API
@@ -314,22 +330,53 @@ const UserManagement = () => {
             phone: formData.phone || "null",
             roleID: formData.roleId
               ? parseInt(formData.roleId, 10)
-              : parseInt(editingUser.roleId || editingUser.roleID, 10),
+              : parseInt(userBeingEdited.roleId || userBeingEdited.roleID, 10),
           };
 
           console.log("Update data:", updateData);
 
+          // Đóng form ngay lập tức
+          setIsFormOpen(false);
+          
+          // Cập nhật trước trong UI để người dùng thấy ngay
+          const updatedUsers = users.map(user => {
+            if (user.userID == userBeingEdited.userID) {
+              return {
+                ...user,
+                fullName: formData.fullName,
+                phone: formData.phone || user.phone,
+                roleId: updateData.roleID,
+                roleID: updateData.roleID,
+                roleName: getRoleName(updateData.roleID)
+              };
+            }
+            return user;
+          });
+          
+          setUsers(updatedUsers);
+          setFilteredUsers(updatedUsers);
+          
+          // Tạm thời ngăn useEffect gọi fetchUsers khi filters thay đổi
+          setSkipFetchOnFilterChange(true);
+          
+          // Hiển thị thông báo thành công
+          toast.success("Đang cập nhật thông tin người dùng...");
+          
           // Gọi API để cập nhật thông tin người dùng và vai trò
-          response = await UpdateUserRoleAPI(editingUser.userID, updateData);
+          response = await UpdateUserRoleAPI(userBeingEdited.userID, updateData);
 
           if (response && response.code === "Success") {
             toast.success("Cập nhật thông tin người dùng thành công!");
-            setIsFormOpen(false);
-            await fetchUsers(); // Refresh danh sách người dùng
+            // Không cần gọi fetchUsers() vì đã cập nhật UI
           } else {
             throw new Error(response?.message || "Cập nhật thất bại");
           }
-        } else if (editingUser.email !== localStorage.getItem("userEmail")) {
+          
+          // Cho phép useEffect gọi fetchUsers khi filters thay đổi trở lại sau 500ms
+          setTimeout(() => {
+            setSkipFetchOnFilterChange(false);
+          }, 500);
+        } else if (userBeingEdited.email !== localStorage.getItem("userEmail")) {
           throw new Error(
             "Bạn không có quyền cập nhật thông tin của người dùng khác"
           );
@@ -339,24 +386,67 @@ const UserManagement = () => {
             fullName: formData.fullName,
             phone: formData.phone || "null",
             // Giữ nguyên roleID hiện tại
-            roleID: parseInt(editingUser.roleId || editingUser.roleID, 10),
+            roleID: parseInt(userBeingEdited.roleId || userBeingEdited.roleID, 10),
           };
 
-          response = await UpdateUserRoleAPI(editingUser.userID, updateData);
+          // Đóng form ngay lập tức
+          setIsFormOpen(false);
+          
+          // Cập nhật trước trong UI để người dùng thấy ngay
+          const updatedUsers = users.map(user => {
+            if (user.userID == userBeingEdited.userID) {
+              return {
+                ...user,
+                fullName: formData.fullName,
+                phone: formData.phone || user.phone
+              };
+            }
+            return user;
+          });
+          
+          setUsers(updatedUsers);
+          setFilteredUsers(updatedUsers);
+          
+          // Tạm thời ngăn useEffect gọi fetchUsers khi filters thay đổi
+          setSkipFetchOnFilterChange(true);
+          
+          // Hiển thị thông báo thành công
+          toast.success("Đang cập nhật thông tin người dùng...");
+          
+          response = await UpdateUserRoleAPI(userBeingEdited.userID, updateData);
 
           if (response && response.code === "Success") {
             toast.success("Cập nhật thông tin thành công!");
-            setIsFormOpen(false);
-            fetchUsers(); // Refresh danh sách người dùng
+            // Không cần gọi fetchUsers() vì đã cập nhật UI
           } else {
             throw new Error("Cập nhật thất bại");
           }
+          
+          // Cho phép useEffect gọi fetchUsers khi filters thay đổi trở lại sau 500ms
+          setTimeout(() => {
+            setSkipFetchOnFilterChange(false);
+          }, 500);
         }
       }
     } catch (error) {
       console.error("Error in handleFormSubmit:", error);
       toast.error(error.message || "Có lỗi xảy ra khi cập nhật");
+      
+      // Cho phép useEffect gọi fetchUsers khi filters thay đổi trở lại trong trường hợp lỗi
+      setSkipFetchOnFilterChange(false);
     }
+  };
+
+  // Hàm hỗ trợ để lấy tên vai trò từ ID
+  const getRoleName = (roleID) => {
+    // Ánh xạ roleID sang tên vai trò
+    const roleMap = {
+      1: "ROLE_ADMIN",
+      2: "ROLE_MANAGER",
+      3: "ROLE_STAFF",
+      4: "ROLE_USER"
+    };
+    return roleMap[roleID] || "ROLE_USER";
   };
 
   const handleCloseForm = () => {
